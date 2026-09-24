@@ -1,0 +1,798 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>pi 学习</title>
+<script src="/hub.js"></script>
+<style>
+:root {
+  --bg: #f6f6f3; --panel: #ffffff; --side: #efefea; --line: #e4e3dc; --line-strong: #d3d2c9;
+  --text: #1f1f1c; --muted: #6d6c64; --faint: #9c9b92;
+  --accent: #3d5afe; --accent-soft: #e8ecff; --accent-text: #2a3fc2;
+  --ok: #2e9d6a; --ok-soft: #e3f4ea; --warn: #c98a12; --warn-soft: #fbf1dc; --danger: #d4453b; --danger-soft: #fbe7e5;
+  --mark: #fff1a8; --user: #f1f0ea; --shadow: 0 1px 2px rgba(20,20,10,.05), 0 4px 16px rgba(20,20,10,.04);
+  --r: 10px;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #161615; --panel: #1e1e1c; --side: #1a1a18; --line: #2c2c29; --line-strong: #3a3a36;
+    --text: #ecebe6; --muted: #a09f97; --faint: #6f6e67;
+    --accent: #7b8cff; --accent-soft: #262b4a; --accent-text: #aab6ff;
+    --ok: #4cc38a; --ok-soft: #1c3328; --warn: #e0a83a; --warn-soft: #3a2f16; --danger: #f07167; --danger-soft: #3d2220;
+    --mark: #5a4e14; --user: #262624; --shadow: none;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #161615; --panel: #1e1e1c; --side: #1a1a18; --line: #2c2c29; --line-strong: #3a3a36;
+  --text: #ecebe6; --muted: #a09f97; --faint: #6f6e67;
+  --accent: #7b8cff; --accent-soft: #262b4a; --accent-text: #aab6ff;
+  --ok: #4cc38a; --ok-soft: #1c3328; --warn: #e0a83a; --warn-soft: #3a2f16; --danger: #f07167; --danger-soft: #3d2220;
+  --mark: #5a4e14; --user: #262624; --shadow: none;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--bg); color: var(--text); font: 14px/1.55 var(--sans); -webkit-font-smoothing: antialiased; }
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; padding: 0; }
+input, textarea, select { font: inherit; color: var(--text); }
+mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1px; }
+code { font: 12.5px var(--mono); background: var(--user); border-radius: 4px; padding: 1px 4px; }
+pre { background: var(--user); border-radius: 8px; padding: 10px 12px; overflow-x: auto; font: 12.5px/1.5 var(--mono); }
+pre code { background: none; padding: 0; }
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 12px; }
+
+.app { display: grid; grid-template-columns: 240px minmax(0, 1fr); grid-template-rows: 56px minmax(0, 1fr); height: 100vh; }
+.app.with-chat { grid-template-columns: 240px minmax(0, 1fr) minmax(320px, 400px); }
+header { grid-column: 1 / -1; display: flex; align-items: center; gap: 14px; padding: 0 16px; border-bottom: 1px solid var(--line); background: var(--panel); min-width: 0; }
+.brand { font-weight: 650; letter-spacing: .2px; white-space: nowrap; display: flex; align-items: center; gap: 8px; }
+.pi-web-multi .brand-name { display: none; }
+.brand .logo { width: 22px; height: 22px; border-radius: 6px; background: var(--accent); color: #fff; display: grid; place-items: center; font-size: 13px; }
+.spacer { flex: 1; }
+.model { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12.5px; min-width: 0; }
+select { height: 30px; border: 1px solid var(--line-strong); border-radius: 7px; background: var(--panel); padding: 0 8px; max-width: 240px; outline: none; }
+select:focus { border-color: var(--accent); }
+
+.btn { height: 32px; padding: 0 12px; border-radius: 7px; border: 1px solid var(--line-strong); font-size: 13px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; text-decoration: none; color: var(--text); }
+.btn:hover { background: var(--bg); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+.btn.primary:hover { filter: brightness(1.08); background: var(--accent); }
+.btn.danger { color: var(--danger); }
+.btn.small { height: 28px; font-size: 12.5px; padding: 0 10px; }
+.btn.ghost { border-color: transparent; color: var(--muted); }
+.btn.ghost:hover { color: var(--text); }
+.btn:disabled { opacity: .5; cursor: default; }
+.seg { display: inline-flex; border: 1px solid var(--line-strong); border-radius: 8px; overflow: hidden; }
+.seg button { padding: 5px 12px; font-size: 13px; color: var(--muted); white-space: nowrap; }
+.seg button + button { border-left: 1px solid var(--line-strong); }
+.seg button.on { background: var(--accent-soft); color: var(--accent-text); font-weight: 600; }
+.spin { display: inline-block; width: 12px; height: 12px; border: 2px solid var(--accent-soft); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; vertical-align: -1px; flex: none; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---- Sidebar: history ---- */
+aside { background: var(--side); border-right: 1px solid var(--line); overflow-y: auto; padding: 12px 8px 24px; display: flex; flex-direction: column; gap: 2px; }
+aside .btn.primary { justify-content: center; margin: 0 4px 10px; height: 34px; }
+.nav-label { font-size: 11px; font-weight: 600; color: var(--faint); letter-spacing: .6px; padding: 10px 10px 4px; text-transform: uppercase; }
+.hist { display: block; width: 100%; padding: 7px 10px; border-radius: 7px; text-align: left; }
+.hist:hover { background: color-mix(in srgb, var(--line) 70%, transparent); }
+.hist.on { background: var(--panel); box-shadow: var(--shadow); }
+.hist .t { font-weight: 550; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hist .m { font-size: 12px; color: var(--faint); display: flex; gap: 8px; align-items: center; }
+.bar { height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; flex: 1; max-width: 70px; display: flex; }
+.bar i { display: block; height: 100%; }
+.bar .g { background: var(--ok); } .bar .r { background: var(--danger); }
+.side-empty { padding: 8px 10px; color: var(--faint); font-size: 12.5px; }
+
+main { overflow-y: auto; min-width: 0; }
+.wrap { max-width: 860px; margin: 0 auto; padding: 22px 24px 80px; }
+h1 { font-size: 20px; margin: 0 0 4px; font-weight: 700; }
+h2 { font-size: 15px; margin: 0; font-weight: 650; }
+.lead { color: var(--muted); margin: 0 0 18px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow); padding: 16px 18px; margin-bottom: 14px; }
+.step { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.step .n { width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); color: var(--accent-text); font-weight: 700; font-size: 12px; display: grid; place-items: center; flex: none; }
+.muted { color: var(--muted); } .faint { color: var(--faint); font-size: 12.5px; }
+.notice { padding: 9px 12px; border-radius: 8px; background: var(--warn-soft); color: var(--text); font-size: 13px; margin: 8px 0; }
+.error { padding: 9px 12px; border-radius: 8px; background: var(--danger-soft); color: var(--danger); font-size: 13px; margin: 8px 0; }
+
+/* ---- Builder ---- */
+.picker-head { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+.picker-head input { flex: 1; min-width: 160px; height: 32px; border: 1px solid var(--line-strong); border-radius: 7px; padding: 0 10px; background: var(--bg); outline: none; }
+.picker-head input:focus, .field input:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.plist { max-height: 340px; overflow-y: auto; border: 1px solid var(--line); border-radius: 8px; }
+.pitem { display: flex; gap: 10px; align-items: flex-start; padding: 8px 12px; border-bottom: 1px solid var(--line); cursor: pointer; }
+.pitem:last-child { border-bottom: 0; }
+.pitem:hover { background: var(--bg); }
+.pitem input { margin-top: 3px; accent-color: var(--accent); }
+.pitem .t { font-weight: 550; overflow-wrap: anywhere; }
+.pitem .m { font-size: 12px; color: var(--faint); }
+.pitem .s { font-size: 12.5px; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+.plist .empty { padding: 28px; text-align: center; color: var(--faint); }
+.tray { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; padding: 3px 6px 3px 9px; border-radius: 999px; background: var(--accent-soft); color: var(--accent-text); font-size: 12.5px; }
+.chip span.t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 260px; }
+.chip input { width: 64px; height: 22px; border: 1px solid var(--line-strong); border-radius: 5px; padding: 0 5px; background: var(--panel); font-size: 12px; }
+.chip button { width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; }
+.chip button:hover { background: color-mix(in srgb, var(--accent) 20%, transparent); }
+.kind { font-size: 11px; padding: 0 6px; border-radius: 4px; background: var(--user); color: var(--muted); white-space: nowrap; font-weight: 500; }
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.stepper { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.stepper .ctl { display: flex; align-items: center; gap: 4px; }
+.stepper .ctl button { width: 26px; height: 26px; border-radius: 6px; border: 1px solid var(--line-strong); font-weight: 600; }
+.stepper .ctl button:hover { background: var(--bg); }
+.stepper .v { min-width: 22px; text-align: center; font: 600 15px var(--mono); }
+.field { display: flex; flex-direction: column; gap: 6px; margin-top: 14px; }
+.field label { font-size: 12.5px; color: var(--muted); font-weight: 550; }
+.field input { height: 34px; border: 1px solid var(--line-strong); border-radius: 7px; padding: 0 10px; background: var(--bg); outline: none; }
+.row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.go { display: flex; align-items: center; gap: 12px; justify-content: flex-end; margin-top: 4px; flex-wrap: wrap; }
+.go .btn.primary { height: 38px; padding: 0 20px; font-size: 14px; }
+.working { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 8px; background: var(--accent-soft); color: var(--accent-text); }
+
+/* ---- Quiz ---- */
+.qhead { display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
+.qhead .grow { flex: 1; min-width: 240px; }
+.qhead h1 { cursor: text; }
+.qhead h1 input { font: inherit; width: 100%; border: 1px solid var(--accent); border-radius: 6px; padding: 0 6px; background: var(--panel); outline: none; }
+.meta { color: var(--faint); font-size: 12.5px; display: flex; gap: 6px 10px; flex-wrap: wrap; align-items: center; }
+.srcs { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.src { display: inline-flex; gap: 6px; align-items: center; font-size: 12.5px; padding: 2px 8px; border-radius: 6px; background: var(--user); color: var(--muted); text-decoration: none; max-width: 100%; }
+.src:hover { color: var(--text); }
+.src .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 280px; }
+.score { display: flex; gap: 16px; align-items: center; margin: 14px 0 18px; padding: 12px 16px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); flex-wrap: wrap; }
+.score .big { font: 700 22px var(--mono); }
+.score .bar { max-width: none; height: 6px; min-width: 120px; }
+.q { position: relative; }
+.q .top { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+.q .no { font: 700 13px var(--mono); color: var(--faint); }
+.badge { font-size: 11.5px; padding: 1px 7px; border-radius: 5px; font-weight: 600; }
+.badge.choice { background: var(--accent-soft); color: var(--accent-text); }
+.badge.fill { background: var(--warn-soft); color: var(--warn); }
+.badge.essay { background: var(--ok-soft); color: var(--ok); }
+.verdict { margin-left: auto; font-size: 12.5px; font-weight: 650; display: inline-flex; gap: 4px; align-items: center; }
+.verdict.ok { color: var(--ok); } .verdict.bad { color: var(--danger); } .verdict.half { color: var(--warn); }
+.qtext { font-size: 15px; line-height: 1.7; }
+.qtext p { margin: 0 0 6px; }
+.blank { display: inline-block; min-width: 110px; width: 11ch; height: 28px; border: 0; border-bottom: 2px solid var(--line-strong); background: var(--bg); border-radius: 4px 4px 0 0; padding: 0 6px; margin: 0 3px; outline: none; font-size: 14px; }
+.blank:focus { border-bottom-color: var(--accent); }
+.blank.ok { border-bottom-color: var(--ok); background: var(--ok-soft); }
+.blank.bad { border-bottom-color: var(--danger); background: var(--danger-soft); }
+.opts { display: flex; flex-direction: column; gap: 6px; margin: 10px 0 4px; }
+.opt { display: flex; gap: 10px; align-items: flex-start; text-align: left; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+.opt:hover:not(:disabled) { border-color: var(--line-strong); background: var(--bg); }
+.opt .l { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--line-strong); display: grid; place-items: center; font: 600 12px var(--mono); flex: none; }
+.opt.multi .l { border-radius: 5px; }
+.opt.picked { border-color: var(--accent); background: var(--accent-soft); }
+.opt.picked .l { background: var(--accent); border-color: var(--accent); color: #fff; }
+.opt.right { border-color: var(--ok); background: var(--ok-soft); }
+.opt.right .l { background: var(--ok); border-color: var(--ok); color: #fff; }
+.opt.wrong { border-color: var(--danger); background: var(--danger-soft); }
+.opt.wrong .l { background: var(--danger); border-color: var(--danger); color: #fff; }
+.opt:disabled { cursor: default; }
+textarea.essay { width: 100%; min-height: 110px; border: 1px solid var(--line-strong); border-radius: 8px; padding: 10px 12px; background: var(--bg); outline: none; resize: vertical; line-height: 1.6; margin-top: 10px; }
+.actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; align-items: center; }
+.reveal { margin-top: 14px; border-top: 1px dashed var(--line-strong); padding-top: 12px; display: flex; flex-direction: column; gap: 12px; }
+.reveal h3 { font-size: 12px; letter-spacing: .5px; color: var(--faint); margin: 0 0 4px; font-weight: 650; text-transform: uppercase; }
+.answer { font-weight: 600; }
+.answer .alt { font-weight: 400; color: var(--muted); }
+.md p { margin: 0 0 8px; } .md p:last-child { margin-bottom: 0; }
+.md ul, .md ol { margin: 4px 0 8px; padding-left: 22px; }
+.feedback { padding: 10px 12px; border-radius: 8px; background: var(--user); }
+.feedback .s { font: 700 16px var(--mono); margin-right: 8px; }
+.cite { border-left: 3px solid var(--line-strong); padding: 2px 0 2px 10px; margin-bottom: 8px; }
+.cite .where { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); }
+.cite .where b { color: var(--text); font-weight: 600; }
+.cite .where a, .cite .where button, .pref { color: var(--accent-text); font-size: 12.5px; text-decoration: none; }
+.cite .where a:hover, .cite .where button:hover { text-decoration: underline; }
+.cite q { display: block; quotes: none; margin-top: 3px; }
+.cite .unv { color: var(--warn); font-size: 12px; }
+.cite .passage { margin-top: 6px; padding: 8px 10px; background: var(--bg); border-radius: 6px; font-size: 13px; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 320px; overflow-y: auto; }
+.pref { background: var(--accent-soft); border-radius: 4px; padding: 0 4px; font: 600 11.5px var(--mono); }
+
+/* ---- Chat ---- */
+.chat { border-left: 1px solid var(--line); background: var(--panel); display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+.chat-head { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+.chat-log { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.msg { max-width: 100%; overflow-wrap: anywhere; }
+.msg.user { align-self: flex-end; background: var(--accent-soft); color: var(--text); padding: 8px 12px; border-radius: 12px 12px 4px 12px; max-width: 88%; white-space: pre-wrap; }
+.msg.assistant { font-size: 13.5px; }
+.msg .by { font-size: 11.5px; color: var(--faint); margin-top: 4px; }
+.msg .added { display: inline-block; margin-top: 6px; padding: 3px 8px; background: var(--ok-soft); color: var(--ok); border-radius: 6px; font-size: 12.5px; font-weight: 600; }
+.chat-hints { display: flex; flex-direction: column; gap: 6px; }
+.chat-hints button { text-align: left; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; color: var(--muted); font-size: 13px; }
+.chat-hints button:hover { border-color: var(--line-strong); color: var(--text); }
+.chat-input { border-top: 1px solid var(--line); padding: 10px 12px; display: flex; gap: 8px; align-items: flex-end; }
+.chat-input textarea { flex: 1; min-height: 38px; max-height: 160px; border: 1px solid var(--line-strong); border-radius: 8px; padding: 8px 10px; background: var(--bg); outline: none; resize: none; line-height: 1.45; }
+.chat-toggle, .chat-close { display: none; }
+
+.toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px); background: var(--text); color: var(--bg); padding: 9px 16px; border-radius: 8px; font-size: 13px; opacity: 0; transition: .2s; pointer-events: none; max-width: calc(100vw - 32px); z-index: 30; }
+.toast.show { opacity: 1; transform: translateX(-50%); }
+.flash { animation: flash 1.2s ease-out; }
+@keyframes flash { from { box-shadow: 0 0 0 3px var(--accent); } to { box-shadow: var(--shadow); } }
+
+@media (max-width: 1100px) {
+  .app.with-chat { grid-template-columns: 220px minmax(0, 1fr); }
+  .app.with-chat .chat { position: fixed; right: 0; top: 56px; bottom: 0; width: min(420px, 100vw); z-index: 20; box-shadow: -8px 0 24px rgba(0,0,0,.12); transform: translateX(100%); transition: transform .2s; }
+  .app.chat-open .chat { transform: none; }
+  .chat-toggle, .chat-close { display: inline-flex; }
+}
+@media (max-width: 760px) {
+  .app, .app.with-chat { grid-template-columns: 1fr; grid-template-rows: auto auto minmax(0, 1fr); height: auto; min-height: 100vh; }
+  header { flex-wrap: wrap; padding: 10px 16px; gap: 10px; }
+  aside { border-right: 0; border-bottom: 1px solid var(--line); max-height: 180px; }
+  .wrap { padding: 16px 16px 80px; }
+  .grid3 { grid-template-columns: 1fr; }
+  .model select { max-width: 160px; }
+  .app.with-chat .chat { top: 0; }
+}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <header>
+    <div class="brand"><span class="logo">π</span><span class="brand-name" id="brandName">学习</span></div>
+    <nav id="pi-web-nav"></nav>
+    <div class="spacer"></div>
+    <label class="model"><span id="modelLabel">模型</span><select id="model"></select></label>
+    <button class="btn small chat-toggle" id="chatToggle"></button>
+  </header>
+  <aside id="side"></aside>
+  <main id="main"></main>
+  <section class="chat" id="chat" hidden></section>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const TOKEN = window.piWeb ? window.piWeb.token : "";
+const LANG = window.piWeb && window.piWeb.lang === "en" ? "en" : "zh";
+document.documentElement.lang = LANG === "zh" ? "zh-CN" : "en";
+
+const L = {
+  zh: {
+    title: "学习", model: "模型", followPi: m => `跟随 pi${m ? `（${m}）` : ""}`, newQuiz: "＋ 新建测验", history: "历史测验", noHistory: "还没有测验",
+    builderTitle: "出一份测验", builderLead: "从你和 AI 的对话、知识库文档里挑材料，AI 按题型出题，每道题都标出原文出处。",
+    step1: "选择材料", step2: "题型和难度", sessions: "对话", kb: "知识库", filter: "筛选…", selected: n => `已选 ${n} 个`,
+    noSessionsApp: "没有检测到会话插件 pi-sessions，安装后才能从对话出题。", noKbApp: "没有检测到知识库插件 pi-kb，安装后才能从知识库出题。",
+    noSessionsYet: "还没有对话", noDocsYet: "知识库里还没有文档", noMatch: "没有匹配的条目", msgs: n => `${n} 条消息`, pages: n => `${n} 页`, note: "笔记",
+    pagesPh: "页码 3-5", allPages: "留空表示全部页",
+    difficulty: "难度", choice: "选择题", fill: "填空题", essay: "解答题", easy: "简单", medium: "中等", hard: "困难",
+    focus: "重点（可选）", focusPh: "想重点考什么？例如：SPI 时钟配置、为什么用 WAL 模式",
+    generate: "生成测验", generating: s => `正在读取材料并出题… ${s} 秒`, cancel: "取消", pickFirst: "先选择至少一个材料", countFirst: "至少要出一道题",
+    generated: "测验已生成", slow: "材料多、题目多时可能要一两分钟。",
+    answered: (a, n) => `已答 ${a} / ${n}`, correctN: c => `答对 ${c}`, redo: "重做", del: "删除", confirmDel: "删除这份测验？", deleted: "已删除",
+    confirmRedo: "清空所有作答，重新做一遍？", showAll: "显示全部答案", hideAll: "隐藏答案",
+    truncated: (u, n) => `材料较长，只选取了其中 ${u} / ${n} 段来出题。`, diff: { easy: "简单", medium: "中等", hard: "困难" },
+    submit: "提交", reveal: "看答案", askAi: "问 AI", multi: "多选", right: "正确", wrong: "错误", partial: s => `${s} 分`,
+    yourAnswer: "你的答案", correctAnswer: "正确答案", reference: "参考答案", points: "评分要点", explanation: "解析", sourcesH: "出处",
+    aiGrade: "AI 批改", aiRecheck: "请 AI 复核", grading: "批改中…", selfRight: "我答对了", selfWrong: "没答对",
+    byAi: "AI 批改", bySelf: "自评", missed: "还缺：", noSource: "模型没有给出有效出处，请谨慎参考这道题。",
+    unverified: "原文中未找到这句原话", showPassage: "看原文", hidePassage: "收起原文", openSession: "打开对话", openDoc: "在知识库打开",
+    msgNo: (n, r) => `第 ${n} 条 · ${r === "user" ? "用户" : "助手"}`, page: n => `第 ${n} 页`, removeQ: "删掉这题", confirmRemoveQ: "删掉这道题？",
+    chatTitle: "问 AI 老师", chatClear: "清空", chatPh: "问题目、答案或知识点，也可以让它再出几道题…（Enter 发送，Shift+Enter 换行）", send: "发送",
+    thinking: "思考中…", added: n => `已添加 ${n} 道新题`, hints: ["帮我讲讲这份测验考了哪些核心知识点", "我做错的题，帮我总结一下错因", "再出 3 道更难的题"],
+    askAbout: n => `第 ${n} 题我不太明白，能讲讲吗？`, chatToggle: "问 AI",
+    offline: "连接不上 pi，请确认 pi 还在运行", switching: "pi 正在切换会话…", sources: n => `${n} 个来源`, questions: n => `${n} 题`,
+    rename: "点击改标题",
+  },
+  en: {
+    title: "Learn", model: "Model", followPi: m => `Follow pi${m ? ` (${m})` : ""}`, newQuiz: "+ New quiz", history: "Quizzes", noHistory: "No quizzes yet",
+    builderTitle: "Make a quiz", builderLead: "Pick conversations and knowledge base documents; the AI writes questions and cites where each one comes from.",
+    step1: "Pick material", step2: "Questions and difficulty", sessions: "Conversations", kb: "Knowledge", filter: "Filter…", selected: n => `${n} selected`,
+    noSessionsApp: "pi-sessions is not installed, so conversations are unavailable.", noKbApp: "pi-kb is not installed, so the knowledge base is unavailable.",
+    noSessionsYet: "No conversations yet", noDocsYet: "The knowledge base is empty", noMatch: "Nothing matches", msgs: n => `${n} messages`, pages: n => `${n} pages`, note: "note",
+    pagesPh: "pages 3-5", allPages: "Leave empty for all pages",
+    difficulty: "Difficulty", choice: "Multiple choice", fill: "Fill in", essay: "Open answer", easy: "Easy", medium: "Medium", hard: "Hard",
+    focus: "Focus (optional)", focusPh: "What should it test? e.g. SPI clock setup, why WAL mode",
+    generate: "Make quiz", generating: s => `Reading material and writing questions… ${s}s`, cancel: "Cancel", pickFirst: "Pick at least one source", countFirst: "Ask for at least one question",
+    generated: "Quiz ready", slow: "Large material or many questions can take a minute or two.",
+    answered: (a, n) => `Answered ${a} / ${n}`, correctN: c => `${c} correct`, redo: "Start over", del: "Delete", confirmDel: "Delete this quiz?", deleted: "Deleted",
+    confirmRedo: "Clear all answers and start over?", showAll: "Show all answers", hideAll: "Hide answers",
+    truncated: (u, n) => `The material is long; ${u} of ${n} passages were used.`, diff: { easy: "easy", medium: "medium", hard: "hard" },
+    submit: "Submit", reveal: "Show answer", askAi: "Ask AI", multi: "multiple", right: "Correct", wrong: "Wrong", partial: s => `${s} pts`,
+    yourAnswer: "Your answer", correctAnswer: "Answer", reference: "Reference answer", points: "Key points", explanation: "Explanation", sourcesH: "Sources",
+    aiGrade: "Grade with AI", aiRecheck: "Ask AI to recheck", grading: "Grading…", selfRight: "I got it", selfWrong: "I missed it",
+    byAi: "graded by AI", bySelf: "self-graded", missed: "Missing: ", noSource: "The model gave no valid source; treat this question with care.",
+    unverified: "exact words not found in the source", showPassage: "Show source", hidePassage: "Hide source", openSession: "Open conversation", openDoc: "Open in knowledge base",
+    msgNo: (n, r) => `message ${n} · ${r === "user" ? "user" : "assistant"}`, page: n => `p.${n}`, removeQ: "Remove", confirmRemoveQ: "Remove this question?",
+    chatTitle: "Ask the tutor", chatClear: "Clear", chatPh: "Ask about a question, an answer or a topic, or ask for more questions… (Enter to send)", send: "Send",
+    thinking: "Thinking…", added: n => `Added ${n} new questions`, hints: ["What are the key ideas this quiz tests?", "Summarize why I got questions wrong", "Give me 3 harder questions"],
+    askAbout: n => `Can you explain question ${n}?`, chatToggle: "Ask AI",
+    offline: "Cannot reach pi; is it still running?", switching: "pi is switching sessions…", sources: n => `${n} sources`, questions: n => `${n} questions`,
+    rename: "Click to rename",
+  },
+}[LANG];
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const letter = n => String.fromCharCode(65 + n);
+let toastTimer;
+function toast(msg) { const t = $("toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 2600); }
+const fmtDate = iso => { const d = new Date(iso); return isNaN(d) ? "" : d.toLocaleDateString(LANG === "zh" ? "zh-CN" : "en", { month: "short", day: "numeric" }) + " " + d.toLocaleTimeString(LANG === "zh" ? "zh-CN" : "en", { hour: "2-digit", minute: "2-digit" }); };
+
+async function api(path, body, signal) {
+  let res;
+  const headers = { "x-token": TOKEN, "x-lang": LANG };
+  try {
+    res = await fetch("/api/learn" + path, body === undefined ? { headers, signal } : { method: "POST", headers: { ...headers, "content-type": "application/json" }, body: JSON.stringify(body), signal });
+  } catch (e) { if (e.name === "AbortError") throw e; throw new Error(L.offline); }
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw Object.assign(new Error(data.error || `HTTP ${res.status}`), { status: res.status });
+  return data;
+}
+
+// ---- Minimal Markdown: code, bold, lists, paragraphs and [P3] passage refs ----
+function inline(s) {
+  return s.replace(/`([^`\n]+)`/g, (_, c) => `<code>${c}</code>`)
+    .replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/\[(P\d+)\]/g, (_, r) => `<button class="pref" data-ref="${r}">${r}</button>`);
+}
+function md(src) {
+  const parts = String(src ?? "").split(/```[^\n]*\n?([\s\S]*?)(?:```|$)/);
+  let html = "";
+  parts.forEach((part, i) => {
+    if (i % 2) { html += `<pre><code>${esc(part.replace(/\n$/, ""))}</code></pre>`; return; }
+    // Runs of list lines become lists, everything else paragraphs (a blank line ends a paragraph).
+    const LI = /^\s*([-*•]|\d+[.)])\s+/;
+    let para = [], list = null;
+    const flush = () => {
+      if (para.length) html += `<p>${para.map(l => inline(esc(l.replace(/^#+\s*/, "")))).join("<br>")}</p>`;
+      if (list) html += `<${list.tag}>${list.items.map(l => `<li>${inline(esc(l))}</li>`).join("")}</${list.tag}>`;
+      para = []; list = null;
+    };
+    for (const line of part.split("\n")) {
+      if (!line.trim()) { flush(); continue; }
+      if (LI.test(line)) {
+        const tag = /^\s*\d/.test(line) ? "ol" : "ul";
+        if (para.length || (list && list.tag !== tag)) flush();
+        (list ??= { tag, items: [] }).items.push(line.replace(LI, ""));
+      } else { if (list) flush(); para.push(line); }
+    }
+    flush();
+  });
+  return `<div class="md">${html}</div>`;
+}
+
+// ---- State ----
+const state = {
+  view: "new", quiz: null, quizzes: [], sources: null, sourcesError: "", tab: "session", filter: "",
+  picks: [], counts: { choice: 4, fill: 2, essay: 1 }, difficulty: "medium", focus: "",
+  models: [], current: "", model: "", gen: null, genError: "", showAll: false, drafts: new Map(), busy: new Set(),
+  openPassages: new Set(), chatBusy: false, chatDraft: "", chatError: "",
+};
+try {
+  const p = JSON.parse(localStorage.getItem("pi-learn-prefs") || "{}");
+  if (p.counts) state.counts = { ...state.counts, ...p.counts };
+  if (p.difficulty) state.difficulty = p.difficulty;
+  if (typeof p.model === "string") state.model = p.model;
+  if (p.tab) state.tab = p.tab;
+} catch {}
+const savePrefs = () => { try { localStorage.setItem("pi-learn-prefs", JSON.stringify({ counts: state.counts, difficulty: state.difficulty, model: state.model, tab: state.tab })); } catch {} };
+
+// ---- Models ----
+async function loadModels() {
+  let r;
+  try { r = await api("/models"); } catch { return; }
+  if (!r.models) return;
+  state.models = r.models; state.current = r.current || "";
+  if (state.model && !state.models.some(m => m.key === state.model)) { state.model = ""; savePrefs(); }
+  renderModels();
+}
+function renderModels() {
+  const multi = new Set(state.models.map(m => m.provider)).size > 1;
+  const cur = state.models.find(m => m.key === state.current)?.name || state.current.split("/").slice(1).join("/");
+  const opt = (v, t) => `<option value="${esc(v)}"${v === state.model ? " selected" : ""}>${esc(t)}</option>`;
+  $("model").innerHTML = opt("", L.followPi(cur)) + state.models.map(m => opt(m.key, multi ? `${m.name} · ${m.provider}` : m.name)).join("");
+}
+$("model").addEventListener("change", e => { state.model = e.target.value; savePrefs(); });
+
+// ---- Sidebar ----
+async function loadQuizzes() {
+  try { state.quizzes = (await api("/quizzes")).quizzes; } catch {}
+  renderSide();
+}
+function renderSide() {
+  const items = state.quizzes.map(q => {
+    const on = state.view === "quiz" && state.quiz?.id === q.id;
+    const g = q.total ? q.correct / q.total * 100 : 0, r = q.total ? (q.answered - q.correct) / q.total * 100 : 0;
+    return `<button class="hist${on ? " on" : ""}" data-quiz="${esc(q.id)}"><div class="t">${esc(q.title)}</div>
+      <div class="m"><span>${esc(fmtDate(q.created))}</span><span class="num">${q.answered}/${q.total}</span><span class="bar"><i class="g" style="width:${g}%"></i><i class="r" style="width:${r}%"></i></span></div></button>`;
+  }).join("");
+  $("side").innerHTML = `<button class="btn primary" data-act="new">${esc(L.newQuiz)}</button><div class="nav-label">${esc(L.history)}</div>${items || `<div class="side-empty">${esc(L.noHistory)}</div>`}`;
+}
+$("side").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.dataset.act === "new") showBuilder();
+  else if (b.dataset.quiz) openQuiz(b.dataset.quiz);
+});
+
+// ---- Builder ----
+function showBuilder() {
+  state.view = "new"; state.quiz = null;
+  history.replaceState(null, "", location.pathname);
+  render();
+  if (!state.sources) loadSources();
+}
+async function loadSources() {
+  try { state.sources = await api("/sources"); state.sourcesError = ""; } catch (e) { state.sourcesError = e.message; }
+  if (state.view === "new") renderMain();
+}
+const picked = (kind, id) => state.picks.some(p => p.kind === kind && p.id === id);
+function sourceRows() {
+  const s = state.sources || {}, f = state.filter.trim().toLowerCase();
+  const match = (...xs) => !f || xs.some(x => String(x ?? "").toLowerCase().includes(f));
+  if (state.tab === "session") {
+    if (!s.sessions) return `<div class="empty">${esc(state.sources ? L.noSessionsApp : "…")}</div>`;
+    const rows = s.sessions.filter(x => !x.archived && match(x.title, x.project, x.summary));
+    if (!s.sessions.length) return `<div class="empty">${esc(L.noSessionsYet)}</div>`;
+    if (!rows.length) return `<div class="empty">${esc(L.noMatch)}</div>`;
+    return rows.slice(0, 300).map(x => `<label class="pitem"><input type="checkbox" data-kind="session" data-id="${esc(x.id)}"${picked("session", x.id) ? " checked" : ""}>
+      <div style="min-width:0"><div class="t">${esc(x.title)}</div>${x.summary ? `<div class="s">${esc(x.summary)}</div>` : ""}
+      <div class="m">${esc(x.project)} · ${esc(fmtDate(x.modified))} · ${esc(L.msgs(x.count))}</div></div></label>`).join("");
+  }
+  if (!s.kb) return `<div class="empty">${esc(state.sources ? L.noKbApp : "…")}</div>`;
+  const rows = s.kb.filter(x => match(x.title, x.kind));
+  if (!s.kb.length) return `<div class="empty">${esc(L.noDocsYet)}</div>`;
+  if (!rows.length) return `<div class="empty">${esc(L.noMatch)}</div>`;
+  return rows.map(x => `<label class="pitem"><input type="checkbox" data-kind="kb" data-id="${esc(x.id)}"${picked("kb", x.id) ? " checked" : ""}>
+    <div style="min-width:0"><div class="t">${esc(x.title)} <span class="kind">${esc(x.collection === "wiki" ? L.note : x.kind)}</span></div>
+    <div class="m">${x.pages ? esc(L.pages(x.pages)) + " · " : ""}${(x.chars / 1000).toFixed(1)}k</div></div></label>`).join("");
+}
+function trayHtml() {
+  return state.picks.map((p, i) => `<span class="chip"><span class="t">${p.kind === "session" ? "💬" : "📄"} ${esc(p.title)}</span>
+    ${p.kind === "kb" && p.paged ? `<input data-pages="${i}" value="${esc(p.pages || "")}" placeholder="${esc(L.pagesPh)}" title="${esc(L.allPages)}">` : ""}
+    <button data-unpick="${i}" aria-label="remove">×</button></span>`).join("");
+}
+function builderHtml() {
+  const s = state.sources || {};
+  const nS = s.sessions?.filter(x => !x.archived).length, nK = s.kb?.length;
+  const stepper = k => `<div class="stepper"><span>${esc(L[k])}</span><span class="ctl"><button data-dec="${k}">−</button><span class="v">${state.counts[k]}</span><button data-inc="${k}">+</button></span></div>`;
+  const gen = state.gen;
+  return `<div class="wrap">
+    <h1>${esc(L.builderTitle)}</h1><p class="lead">${esc(L.builderLead)}</p>
+    <div class="card">
+      <div class="step"><span class="n">1</span><h2>${esc(L.step1)}</h2><span class="spacer"></span><span class="faint">${esc(L.selected(state.picks.length))}</span></div>
+      <div class="picker-head">
+        <div class="seg"><button data-tab="session" class="${state.tab === "session" ? "on" : ""}">${esc(L.sessions)}${nS != null ? ` <span class="num">${nS}</span>` : ""}</button><button data-tab="kb" class="${state.tab === "kb" ? "on" : ""}">${esc(L.kb)}${nK != null ? ` <span class="num">${nK}</span>` : ""}</button></div>
+        <input id="filter" placeholder="${esc(L.filter)}" value="${esc(state.filter)}" autocomplete="off">
+      </div>
+      ${state.sourcesError ? `<div class="error">${esc(state.sourcesError)}</div>` : ""}
+      <div class="plist" id="plist">${sourceRows()}</div>
+      <div class="tray" id="tray">${trayHtml()}</div>
+    </div>
+    <div class="card">
+      <div class="step"><span class="n">2</span><h2>${esc(L.step2)}</h2></div>
+      <div class="grid3">${stepper("choice")}${stepper("fill")}${stepper("essay")}</div>
+      <div class="field"><label>${esc(L.difficulty)}</label>
+        <div class="seg">${["easy", "medium", "hard"].map(d => `<button data-diff="${d}" class="${state.difficulty === d ? "on" : ""}">${esc(L[d])}</button>`).join("")}</div></div>
+      <div class="field"><label for="focus">${esc(L.focus)}</label><input id="focus" value="${esc(state.focus)}" placeholder="${esc(L.focusPh)}" maxlength="500"></div>
+    </div>
+    ${state.genError ? `<div class="error">${esc(state.genError)}</div>` : ""}
+    ${gen ? `<div class="working"><span class="spin"></span><span id="genText">${esc(L.generating(Math.round((Date.now() - gen.started) / 1000)))}</span><span class="spacer"></span><button class="btn small" data-act="cancel">${esc(L.cancel)}</button></div><p class="faint">${esc(L.slow)}</p>`
+      : `<div class="go"><span class="faint">${esc(L.questions(state.counts.choice + state.counts.fill + state.counts.essay))} · ${esc(L.sources(state.picks.length))}</span><button class="btn primary" data-act="generate">${esc(L.generate)}</button></div>`}
+  </div>`;
+}
+function togglePick(kind, id, on) {
+  if (!on) { state.picks = state.picks.filter(p => !(p.kind === kind && p.id === id)); return; }
+  if (picked(kind, id)) return;
+  const s = state.sources || {};
+  const item = kind === "session" ? s.sessions?.find(x => x.id === id) : s.kb?.find(x => x.id === id);
+  state.picks.push({ kind, id, title: item?.title || id, paged: kind === "kb" && !!item?.pages, pages: "" });
+}
+async function generate() {
+  if (!state.picks.length) return toast(L.pickFirst);
+  if (!(state.counts.choice + state.counts.fill + state.counts.essay)) return toast(L.countFirst);
+  const abort = new AbortController();
+  state.gen = { started: Date.now(), abort }; state.genError = "";
+  renderMain();
+  const tick = setInterval(() => { const el = $("genText"); if (el && state.gen) el.textContent = L.generating(Math.round((Date.now() - state.gen.started) / 1000)); }, 1000);
+  try {
+    const quiz = await api("/generate", {
+      sources: state.picks.map(p => ({ kind: p.kind, id: p.id, pages: p.pages || undefined })),
+      counts: state.counts, difficulty: state.difficulty, focus: state.focus, model: state.model || undefined,
+    }, abort.signal);
+    state.gen = null; state.picks = []; state.focus = "";
+    toast(L.generated);
+    await loadQuizzes();
+    showQuiz(quiz);
+  } catch (e) {
+    state.gen = null;
+    if (e.name !== "AbortError") state.genError = e.message;
+    if (state.view === "new") renderMain();
+  } finally { clearInterval(tick); }
+}
+
+// ---- Quiz ----
+async function openQuiz(id) {
+  try { showQuiz(await api("/quiz?id=" + encodeURIComponent(id))); } catch (e) { toast(e.message); }
+}
+function showQuiz(quiz) {
+  const changed = state.quiz?.id !== quiz.id;
+  state.view = "quiz"; state.quiz = quiz;
+  if (changed) { state.drafts.clear(); state.showAll = false; state.openPassages.clear(); state.chatError = ""; }
+  history.replaceState(null, "", `${location.pathname}?quiz=${encodeURIComponent(quiz.id)}`);
+  render();
+  if (changed) $("main").scrollTop = 0;
+}
+const passage = ref => state.quiz?.passages.find(p => p.ref === ref);
+function whereHtml(p) {
+  if (!p) return "";
+  if (p.kind === "session") return `💬 <b>${esc(p.title)}</b> · ${esc(L.msgNo((p.at ?? 0) + 1, p.role))} <a href="/sessions/?id=${encodeURIComponent(p.sourceId)}" target="_blank">${esc(L.openSession)} ↗</a>`;
+  return `📄 <b>${esc(p.title)}</b>${p.at ? " · " + esc(L.page(p.at)) : ""} <a href="/kb/?doc=${encodeURIComponent(p.sourceId)}${p.at ? "&page=" + p.at : ""}" target="_blank">${esc(L.openDoc)} ↗</a>`;
+}
+function highlight(text, quote) {
+  const i = quote ? text.indexOf(quote) : -1;
+  if (i < 0) return esc(text);
+  return esc(text.slice(0, i)) + "<mark>" + esc(quote) + "</mark>" + esc(text.slice(i + quote.length));
+}
+function citeHtml(q, c) {
+  const p = passage(c.ref), key = q.id + ":" + c.ref, open = state.openPassages.has(key);
+  return `<div class="cite"><div class="where"><span class="pref">${esc(c.ref)}</span>${whereHtml(p)}<button data-passage="${esc(key)}">${esc(open ? L.hidePassage : L.showPassage)}</button></div>
+    ${c.quote ? `<q>“${inline(esc(c.quote))}”${c.verified ? "" : ` <span class="unv">⚠ ${esc(L.unverified)}</span>`}</q>` : ""}
+    ${open && p ? `<div class="passage">${highlight(p.text, c.verified ? c.quote : "")}</div>` : ""}</div>`;
+}
+function verdictHtml(r) {
+  if (!r) return "";
+  const cls = r.correct ? "ok" : r.score > 0 ? "half" : "bad";
+  const label = r.by === "auto" || r.score === 100 || r.score === 0 ? (r.correct ? "✓ " + L.right : "✗ " + L.wrong) : (r.correct ? "✓ " : "✗ ") + L.partial(r.score);
+  return `<span class="verdict ${cls}">${esc(label)}${r.by !== "auto" ? ` <span class="faint">· ${esc(r.by === "ai" ? L.byAi : L.bySelf)}</span>` : ""}</span>`;
+}
+function questionText(q, revealed) {
+  if (q.type !== "fill") return md(q.question);
+  // Each ____ becomes an input; after reveal it shows right or wrong.
+  const d = state.drafts.get(q.id) || {}, given = q.response?.blanks || d.blanks || [];
+  let i = 0;
+  const html = md(q.question).replace(/_{3,}/g, () => {
+    const n = i++, ok = q.result?.blanks?.[n];
+    const cls = q.result ? (ok ? " ok" : " bad") : "";
+    return `<input class="blank${cls}" data-blank="${n}" data-q="${esc(q.id)}" value="${esc(given[n] || "")}"${revealed && q.response ? " disabled" : ""} autocomplete="off">`;
+  });
+  return html;
+}
+function questionHtml(q, i) {
+  const revealed = q.revealed || state.showAll, d = state.drafts.get(q.id) || {}, busy = state.busy.has(q.id);
+  const multi = q.type === "choice" && q.answer.length > 1;
+  let body = "";
+  if (q.type === "choice") {
+    const chosen = new Set(q.response?.choice ?? d.choice ?? []);
+    body = `<div class="opts">${q.options.map((o, j) => {
+      let cls = "";
+      if (revealed) cls = q.answer.includes(j) ? " right" : chosen.has(j) ? " wrong" : "";
+      else if (chosen.has(j)) cls = " picked";
+      return `<button class="opt${multi ? " multi" : ""}${cls}" data-opt="${j}" data-q="${esc(q.id)}"${revealed ? " disabled" : ""}><span class="l">${letter(j)}</span><span>${inline(esc(o))}</span></button>`;
+    }).join("")}</div>`;
+  } else if (q.type === "essay") {
+    body = `<textarea class="essay" data-essay="${esc(q.id)}"${q.response ? " disabled" : ""}>${esc(q.response?.text ?? d.text ?? "")}</textarea>`;
+  }
+  let actions = "";
+  if (!q.response && !q.revealed) actions = `<button class="btn primary small" data-submit="${esc(q.id)}">${esc(L.submit)}</button><button class="btn small" data-reveal="${esc(q.id)}">${esc(L.reveal)}</button>`;
+  else if (q.type !== "choice" && q.response && (!q.result || q.result.by === "auto" && !q.result.correct)) {
+    actions = busy ? `<span class="spin"></span><span class="faint">${esc(L.grading)}</span>`
+      : `<button class="btn small" data-grade="${esc(q.id)}">✨ ${esc(q.result ? L.aiRecheck : L.aiGrade)}</button>${q.type === "essay" ? `<button class="btn small" data-self="1" data-q="${esc(q.id)}">${esc(L.selfRight)}</button><button class="btn small" data-self="0" data-q="${esc(q.id)}">${esc(L.selfWrong)}</button>` : ""}`;
+  }
+  actions += `<span class="spacer"></span><button class="btn ghost small" data-ask="${i + 1}">💬 ${esc(L.askAi)}</button><button class="btn ghost small" data-rmq="${esc(q.id)}" title="${esc(L.removeQ)}">🗑</button>`;
+
+  let reveal = "";
+  if (revealed) {
+    const parts = [];
+    if (q.type === "choice") parts.push(`<div><h3>${esc(L.correctAnswer)}</h3><div class="answer">${q.answer.map(letter).join(", ")}</div></div>`);
+    if (q.type === "fill") parts.push(`<div><h3>${esc(L.correctAnswer)}</h3><div class="answer">${q.blanks.map((b, n) => `<div>${q.blanks.length > 1 ? `(${n + 1}) ` : ""}${esc(b[0])}${b.length > 1 ? ` <span class="alt">/ ${esc(b.slice(1).join(" / "))}</span>` : ""}</div>`).join("")}</div></div>`);
+    if (q.type === "essay") parts.push(`<div><h3>${esc(L.reference)}</h3>${md(q.reference)}${q.points?.length ? `<h3 style="margin-top:10px">${esc(L.points)}</h3><ul style="margin:0;padding-left:20px">${q.points.map(p => `<li>${inline(esc(p))}</li>`).join("")}</ul>` : ""}</div>`);
+    if (q.result?.by === "ai" && q.result.feedback) parts.push(`<div class="feedback"><span class="s">${q.result.score}</span>${inline(esc(q.result.feedback))}${q.result.missed?.length ? `<div class="faint" style="margin-top:4px">${esc(L.missed)}${esc(q.result.missed.join("；"))}</div>` : ""}</div>`);
+    if (q.explanation) parts.push(`<div><h3>${esc(L.explanation)}</h3>${md(q.explanation)}</div>`);
+    parts.push(`<div><h3>${esc(L.sourcesH)}</h3>${q.sources.length ? q.sources.map(c => citeHtml(q, c)).join("") : `<div class="notice">${esc(L.noSource)}</div>`}</div>`);
+    reveal = `<div class="reveal">${parts.join("")}</div>`;
+  }
+  return `<div class="card q" id="q-${esc(q.id)}"><div class="top"><span class="no">${i + 1}</span><span class="badge ${q.type}">${esc(L[q.type])}${multi ? " · " + esc(L.multi) : ""}</span>${verdictHtml(q.result)}</div>
+    <div class="qtext">${questionText(q, revealed)}</div>${body}<div class="actions">${actions}</div>${reveal}</div>`;
+}
+function scoreHtml(z) {
+  const n = z.questions.length, answered = z.questions.filter(q => q.result).length, correct = z.questions.filter(q => q.result?.correct).length;
+  return `<div class="score"><span class="big">${correct}<span class="faint">/${n}</span></span><span class="muted">${esc(L.answered(answered, n))} · ${esc(L.correctN(correct))}</span>
+    <span class="bar"><i class="g" style="width:${n ? correct / n * 100 : 0}%"></i><i class="r" style="width:${n ? (answered - correct) / n * 100 : 0}%"></i></span></div>`;
+}
+function quizHtml() {
+  const z = state.quiz;
+  const srcs = z.sources.map(s => s.kind === "session"
+    ? `<a class="src" href="/sessions/?id=${encodeURIComponent(s.id)}" target="_blank">💬 <span class="t">${esc(s.title)}</span></a>`
+    : `<a class="src" href="/kb/?doc=${encodeURIComponent(s.id)}" target="_blank">📄 <span class="t">${esc(s.title)}${s.pages ? " · " + esc(s.pages) : ""}</span></a>`).join("");
+  const used = z.sources.reduce((a, s) => a + s.used, 0), all = z.sources.reduce((a, s) => a + s.passages, 0);
+  return `<div class="wrap">
+    <div class="qhead"><div class="grow"><h1 id="qtitle" title="${esc(L.rename)}">${esc(z.title)}</h1>
+      <div class="meta"><span>${esc(fmtDate(z.created))}</span><span>·</span><span>${esc(L.diff[z.difficulty] || z.difficulty)}</span><span>·</span><span class="num">${esc(z.model)}</span>${z.focus ? `<span>·</span><span>🎯 ${esc(z.focus)}</span>` : ""}</div>
+      <div class="srcs">${srcs}</div></div>
+      <div class="row"><button class="btn small" data-act="showall">${esc(state.showAll ? L.hideAll : L.showAll)}</button><button class="btn small" data-act="redo">${esc(L.redo)}</button><button class="btn small danger" data-act="delete">${esc(L.del)}</button></div></div>
+    ${z.truncated ? `<div class="notice">${esc(L.truncated(used, all))}</div>` : ""}
+    ${scoreHtml(z)}
+    ${z.questions.map(questionHtml).join("")}
+  </div>`;
+}
+function updateQuestion(quiz, qid) {
+  state.quiz = quiz;
+  const q = quiz.questions.find(x => x.id === qid), i = quiz.questions.indexOf(q), el = $("q-" + qid);
+  if (!q || !el) return renderMain();
+  el.outerHTML = questionHtml(q, i);
+  const score = document.querySelector(".score");
+  if (score) score.outerHTML = scoreHtml(quiz);
+  const s = state.quizzes.find(x => x.id === quiz.id);
+  if (s) { s.answered = quiz.questions.filter(x => x.result).length; s.correct = quiz.questions.filter(x => x.result?.correct).length; s.total = quiz.questions.length; renderSide(); }
+}
+async function quizAction(path, body, qid) {
+  if (qid) { state.busy.add(qid); updateQuestion(state.quiz, qid); }
+  try {
+    const quiz = await api(path, { id: state.quiz.id, ...body });
+    if (qid) { state.busy.delete(qid); state.drafts.delete(qid); updateQuestion(quiz, qid); } else { state.quiz = quiz; renderMain(); }
+    return quiz;
+  } catch (e) {
+    if (qid) { state.busy.delete(qid); updateQuestion(state.quiz, qid); }
+    toast(e.message);
+  }
+}
+function submit(qid) {
+  const q = state.quiz.questions.find(x => x.id === qid), d = state.drafts.get(qid) || {};
+  if (q.type === "choice") return quizAction("/answer", { qid, choice: d.choice || [] }, qid);
+  if (q.type === "fill") return quizAction("/answer", { qid, blanks: [...document.querySelectorAll(`#q-${CSS.escape(qid)} .blank`)].map(b => b.value) }, qid);
+  return quizAction("/answer", { qid, text: d.text || "" }, qid);
+}
+
+// ---- Chat ----
+function chatHtml() {
+  const z = state.quiz;
+  const log = z.chat.map(m => m.role === "user" ? `<div class="msg user">${esc(m.text)}</div>`
+    : `<div class="msg assistant">${md(m.text)}${m.added ? `<div class="added">＋ ${esc(L.added(m.added))}</div>` : ""}<div class="by">${esc(m.model || "")}</div></div>`).join("");
+  const hints = z.chat.length ? "" : `<div class="chat-hints">${L.hints.map(h => `<button data-hint="${esc(h)}">${esc(h)}</button>`).join("")}</div>`;
+  return `<div class="chat-head"><h2>💬 ${esc(L.chatTitle)}</h2><span class="spacer"></span>${z.chat.length ? `<button class="btn ghost small" data-act="chatclear">${esc(L.chatClear)}</button>` : ""}<button class="btn ghost small chat-close" data-act="chatclose" aria-label="close">✕</button></div>
+    <div class="chat-log" id="chatLog">${hints}${log}${state.chatBusy ? `<div class="msg assistant faint"><span class="spin"></span> ${esc(L.thinking)}</div>` : ""}${state.chatError ? `<div class="error">${esc(state.chatError)}</div>` : ""}</div>
+    <div class="chat-input"><textarea id="chatInput" rows="1" placeholder="${esc(L.chatPh)}">${esc(state.chatDraft)}</textarea><button class="btn primary" data-act="send"${state.chatBusy ? " disabled" : ""}>${esc(L.send)}</button></div>`;
+}
+function renderChat() {
+  const c = $("chat");
+  c.innerHTML = chatHtml();
+  const log = $("chatLog"); log.scrollTop = log.scrollHeight;
+  autosize($("chatInput"));
+}
+function autosize(t) { if (!t) return; t.style.height = "auto"; t.style.height = Math.min(160, t.scrollHeight + 2) + "px"; }
+async function sendChat(text) {
+  text = (text ?? state.chatDraft).trim();
+  if (!text || state.chatBusy) return;
+  const quiz = state.quiz, before = quiz.questions.length;
+  state.chatBusy = true; state.chatDraft = ""; state.chatError = "";
+  quiz.chat.push({ role: "user", text });
+  renderChat();
+  try {
+    const next = await api("/chat", { id: quiz.id, message: text, model: state.model || undefined });
+    state.chatBusy = false;
+    if (state.quiz?.id !== next.id) return;
+    state.quiz = next;
+    renderChat();
+    if (next.questions.length !== before) { renderMain(); loadQuizzes(); }
+  } catch (e) {
+    state.chatBusy = false;
+    quiz.chat.pop(); state.chatDraft = text; state.chatError = e.message;
+    if (state.quiz?.id === quiz.id) renderChat();
+  }
+}
+
+// ---- Rendering and events ----
+function renderMain() { $("main").innerHTML = state.view === "quiz" && state.quiz ? quizHtml() : builderHtml(); }
+function render() {
+  const withChat = state.view === "quiz" && !!state.quiz;
+  $("app").classList.toggle("with-chat", withChat);
+  if (!withChat) $("app").classList.remove("chat-open");
+  $("chat").hidden = !withChat;
+  $("chatToggle").hidden = !withChat;
+  renderSide(); renderMain();
+  if (withChat) renderChat();
+}
+
+$("main").addEventListener("click", async e => {
+  const b = e.target.closest("button"); if (!b) return;
+  const d = b.dataset;
+  if (d.tab) { state.tab = d.tab; savePrefs(); renderMain(); return; }
+  if (d.inc || d.dec) { const k = d.inc || d.dec; state.counts[k] = Math.max(0, Math.min(20, state.counts[k] + (d.inc ? 1 : -1))); savePrefs(); renderMain(); return; }
+  if (d.diff) { state.difficulty = d.diff; savePrefs(); renderMain(); return; }
+  if (d.unpick) { state.picks.splice(Number(d.unpick), 1); renderMain(); return; }
+  if (d.act === "generate") return generate();
+  if (d.act === "cancel") { state.gen?.abort.abort(); return; }
+  if (d.act === "showall") { state.showAll = !state.showAll; renderMain(); return; }
+  if (d.act === "redo") { if (confirm(L.confirmRedo)) { state.drafts.clear(); await quizAction("/reset", {}); loadQuizzes(); } return; }
+  if (d.act === "delete") {
+    if (!confirm(L.confirmDel)) return;
+    try { await api("/delete", { id: state.quiz.id }); toast(L.deleted); } catch (err) { return toast(err.message); }
+    await loadQuizzes(); showBuilder(); return;
+  }
+  if (d.opt !== undefined) {
+    const q = state.quiz.questions.find(x => x.id === d.q), draft = state.drafts.get(q.id) || {}, j = Number(d.opt);
+    const cur = new Set(draft.choice || []);
+    if (q.answer.length > 1) { cur.has(j) ? cur.delete(j) : cur.add(j); } else { cur.clear(); cur.add(j); }
+    state.drafts.set(q.id, { ...draft, choice: [...cur] });
+    updateQuestion(state.quiz, q.id);
+    return;
+  }
+  if (d.submit) return submit(d.submit);
+  if (d.reveal) return quizAction("/reveal", { qid: d.reveal }, d.reveal);
+  if (d.grade) return quizAction("/grade", { qid: d.grade, model: state.model || undefined }, d.grade);
+  if (d.self) return quizAction("/self", { qid: d.q, correct: d.self === "1" }, d.q);
+  if (d.rmq) { if (confirm(L.confirmRemoveQ)) { await quizAction("/remove-question", { qid: d.rmq }); loadQuizzes(); } return; }
+  if (d.passage) {
+    state.openPassages.has(d.passage) ? state.openPassages.delete(d.passage) : state.openPassages.add(d.passage);
+    updateQuestion(state.quiz, d.passage.split(":")[0]); return;
+  }
+  if (d.ask) {
+    $("app").classList.add("chat-open");
+    state.chatDraft = L.askAbout(d.ask); renderChat();
+    const t = $("chatInput"); t.focus(); t.setSelectionRange(t.value.length, t.value.length); return;
+  }
+  if (d.ref) showRef(d.ref);
+});
+$("main").addEventListener("change", e => {
+  const t = e.target;
+  if (t.matches(".pitem input[type=checkbox]")) { togglePick(t.dataset.kind, t.dataset.id, t.checked); $("tray").innerHTML = trayHtml(); document.querySelector(".step .faint").textContent = L.selected(state.picks.length); const go = document.querySelector(".go .faint"); if (go) go.textContent = `${L.questions(state.counts.choice + state.counts.fill + state.counts.essay)} · ${L.sources(state.picks.length)}`; }
+});
+$("main").addEventListener("input", e => {
+  const t = e.target;
+  if (t.id === "filter") { state.filter = t.value; $("plist").innerHTML = sourceRows(); return; }
+  if (t.id === "focus") { state.focus = t.value; return; }
+  if (t.dataset.pages !== undefined) { state.picks[Number(t.dataset.pages)].pages = t.value.trim(); return; }
+  if (t.dataset.essay) { const d = state.drafts.get(t.dataset.essay) || {}; state.drafts.set(t.dataset.essay, { ...d, text: t.value }); return; }
+  if (t.dataset.blank !== undefined) {
+    const d = state.drafts.get(t.dataset.q) || {}, blanks = [...(d.blanks || [])];
+    blanks[Number(t.dataset.blank)] = t.value; state.drafts.set(t.dataset.q, { ...d, blanks });
+  }
+});
+$("main").addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.isComposing && e.target.classList?.contains("blank")) { e.preventDefault(); submit(e.target.dataset.q); }
+});
+// Click the quiz title to rename it.
+$("main").addEventListener("click", e => {
+  const h = e.target.closest("#qtitle"); if (!h || h.querySelector("input")) return;
+  h.innerHTML = `<input value="${esc(state.quiz.title)}" maxlength="80">`;
+  const input = h.querySelector("input"); input.focus(); input.select();
+  const done = async save => {
+    input.onblur = null;
+    const title = input.value.trim();
+    if (save && title && title !== state.quiz.title) { await quizAction("/rename", { title }); loadQuizzes(); } else renderMain();
+  };
+  input.onblur = () => done(true);
+  input.onkeydown = ev => { if (ev.key === "Enter" && !ev.isComposing) done(true); if (ev.key === "Escape") done(false); };
+});
+
+$("chat").addEventListener("click", async e => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.dataset.hint) return sendChat(b.dataset.hint);
+  if (b.dataset.act === "send") return sendChat();
+  if (b.dataset.act === "chatclose") { $("app").classList.remove("chat-open"); return; }
+  if (b.dataset.act === "chatclear") { const quiz = await api("/chat/clear", { id: state.quiz.id }).catch(err => toast(err.message)); if (quiz) { state.quiz = quiz; renderChat(); } return; }
+  if (b.dataset.ref) showRef(b.dataset.ref);
+});
+$("chat").addEventListener("input", e => { if (e.target.id === "chatInput") { state.chatDraft = e.target.value; autosize(e.target); } });
+$("chat").addEventListener("keydown", e => {
+  if (e.target.id === "chatInput" && e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); sendChat(); }
+});
+$("chatToggle").textContent = "💬 " + L.chatToggle;
+$("chatToggle").addEventListener("click", () => $("app").classList.toggle("chat-open"));
+
+/** A [P3] in an explanation or chat reply: jump to a question citing it, or show the passage. */
+function showRef(ref) {
+  const q = state.quiz?.questions.find(x => x.sources.some(c => c.ref === ref) && (x.revealed || state.showAll));
+  if (q) {
+    state.openPassages.add(q.id + ":" + ref); updateQuestion(state.quiz, q.id);
+    const el = $("q-" + q.id); el.scrollIntoView({ behavior: "smooth", block: "center" }); el.classList.add("flash"); setTimeout(() => el.classList.remove("flash"), 1300);
+    return;
+  }
+  const p = passage(ref);
+  if (p) alert(`${ref} · ${p.title}\n\n${p.text.slice(0, 3000)}`);
+}
+
+// ---- Start ----
+$("brandName").textContent = L.title; $("modelLabel").textContent = L.model; document.title = "pi " + L.title;
+$("model").title = L.model;
+renderModels();
+loadModels();
+loadQuizzes();
+const link = new URLSearchParams(location.search).get("quiz");
+if (link) openQuiz(link); else showBuilder();
+document.addEventListener("visibilitychange", () => { if (!document.hidden) { loadModels(); if (state.view === "new") loadSources(); } });
+</script>
+</body>
+</html>

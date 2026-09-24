@@ -1,0 +1,49 @@
+{
+  "name": "pi-learn",
+  "version": "0.1.0",
+  "description": "Quiz yourself on your pi conversations and knowledge base: multiple choice, fill-in and open questions with cited sources, answers and explanations",
+  "type": "module",
+  "license": "MIT",
+  "files": [
+    "index.ts",
+    "src",
+    "web",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "pi-package",
+    "pi-extension",
+    "quiz",
+    "learning"
+  ],
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  },
+  "engines": {
+    "node": ">=22.19"
+  },
+  "scripts": {
+    "check": "tsc --noEmit",
+    "test": "node --test --disable-warning=ExperimentalWarning test/*.test.ts"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*"
+  },
+  "peerDependenciesMeta": {
+    "@earendil-works/pi-coding-agent": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@earendil-works/pi-coding-agent": "^0.87.1",
+    "@types/node": "^24.13.6",
+    "typescript": "5.9"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/woertedetiankong/pi-learn.git"
+  }
+}
