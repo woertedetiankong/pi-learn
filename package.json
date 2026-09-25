@@ -1,6 +1,6 @@
 {
   "name": "pi-learn",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Quiz yourself on your pi conversations and knowledge base: multiple choice, fill-in and open questions with cited sources, answers and explanations",
   "type": "module",
   "license": "MIT",
