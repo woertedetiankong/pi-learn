@@ -46,7 +46,7 @@ export default function piLearn(pi: ExtensionAPI): void {
         await hub().start();
         const url = hub().url(learn.id) ?? "";
         if (command === "url") { ctx.ui.notify(m.url(url), "info"); return; }
-        const [cmd, ...cmdArgs] = process.platform === "darwin" ? ["open"] : process.platform === "win32" ? ["cmd", "/c", "start", '""'] : ["xdg-open"];
+        const [cmd, ...cmdArgs] = process.platform === "darwin" ? ["open"] : process.platform === "win32" ? ["cmd", "/c", "start", ""] : ["xdg-open"];
         await pi.exec(cmd, [...cmdArgs, url]).catch(() => undefined);
         ctx.ui.notify(m.opened(url.replace(/#.*/, "")), "info");
       } catch (e) {
