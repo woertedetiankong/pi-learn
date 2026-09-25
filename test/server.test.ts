@@ -35,7 +35,7 @@ const sessionsApp: WebApp = {
 const kbApp: WebApp = {
   id: "kb", order: 20, title: { zh: "知识库", en: "Knowledge" }, languages: ["zh"], page: async () => "",
   handle: async req => {
-    if (req.path === "/docs") return { docs: [{ id: "k1", title: "sqlite.pdf", collection: "docs", kind: "pdf", pages: 3, chars: 900 }] };
+    if (req.path === "/docs") return { docs: [{ id: "k1", title: "sqlite.pdf", collection: "docs", kind: "pdf", pages: 3, chars: 900, scope: "project" }] };
     if (req.path === "/doc") return { doc: { id: "k1", title: "sqlite.pdf" }, text:
       "<!-- kb:page 1 -->\nSQLite is a library.\n\n<!-- kb:page 2 -->\nThe WAL journal mode lets readers continue while a writer commits.\n\n<!-- kb:page 3 -->\nVACUUM rebuilds the file." };
     throw Object.assign(new Error("not found"), { status: 404 });
@@ -98,6 +98,7 @@ test("status and sources come from the other mounted apps", async () => {
   const { data } = await call("/sources");
   assert.deepEqual(data.sessions.map((s: any) => [s.id, s.title, s.project]), [["s1", "SPI 读回 0xFF 排查", "xr100"]]);
   assert.equal(data.kb[0].pages, 3);
+  assert.equal(data.kb[0].scope, "project", "pi-kb 0.5 says which knowledge base a document is in");
   const models = await call("/models");
   assert.deepEqual(models.data.models, [{ key: "test/tutor-1", name: "Tutor", provider: "test" }]);
 });

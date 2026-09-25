@@ -117,6 +117,8 @@ h2 { font-size: 15px; margin: 0; font-weight: 650; }
 .chip button { width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; }
 .chip button:hover { background: color-mix(in srgb, var(--accent) 20%, transparent); }
 .kind { font-size: 11px; padding: 0 6px; border-radius: 4px; background: var(--user); color: var(--muted); white-space: nowrap; font-weight: 500; }
+.scope { font-size: 11px; padding: 0 6px; border-radius: 4px; border: 1px solid var(--line-strong); color: var(--muted); white-space: nowrap; font-weight: 600; margin-right: 4px; }
+.scope.project { border-color: color-mix(in srgb, var(--ok) 45%, transparent); color: var(--ok); }
 .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .stepper { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .stepper .ctl { display: flex; align-items: center; gap: 4px; }
@@ -255,6 +257,7 @@ const L = {
     step1: "选择材料", step2: "题型和难度", sessions: "对话", kb: "知识库", filter: "筛选…", selected: n => `已选 ${n} 个`,
     noSessionsApp: "没有检测到会话插件 pi-sessions，安装后才能从对话出题。", noKbApp: "没有检测到知识库插件 pi-kb，安装后才能从知识库出题。",
     noSessionsYet: "还没有对话", noDocsYet: "知识库里还没有文档", noMatch: "没有匹配的条目", msgs: n => `${n} 条消息`, pages: n => `${n} 页`, note: "笔记",
+    scope: { project: "项目", global: "全局" }, scopeTip: { project: "当前项目的知识库（通过 git 与团队共享）", global: "你自己的全局知识库" },
     pagesPh: "页码 3-5", allPages: "留空表示全部页",
     difficulty: "难度", choice: "选择题", fill: "填空题", essay: "解答题", easy: "简单", medium: "中等", hard: "困难",
     focus: "重点（可选）", focusPh: "想重点考什么？例如：SPI 时钟配置、为什么用 WAL 模式",
@@ -281,6 +284,7 @@ const L = {
     step1: "Pick material", step2: "Questions and difficulty", sessions: "Conversations", kb: "Knowledge", filter: "Filter…", selected: n => `${n} selected`,
     noSessionsApp: "pi-sessions is not installed, so conversations are unavailable.", noKbApp: "pi-kb is not installed, so the knowledge base is unavailable.",
     noSessionsYet: "No conversations yet", noDocsYet: "The knowledge base is empty", noMatch: "Nothing matches", msgs: n => `${n} messages`, pages: n => `${n} pages`, note: "note",
+    scope: { project: "project", global: "global" }, scopeTip: { project: "This project's knowledge base (shared with the team through git)", global: "Your own global knowledge base" },
     pagesPh: "pages 3-5", allPages: "Leave empty for all pages",
     difficulty: "Difficulty", choice: "Multiple choice", fill: "Fill in", essay: "Open answer", easy: "Easy", medium: "Medium", hard: "Hard",
     focus: "Focus (optional)", focusPh: "What should it test? e.g. SPI clock setup, why WAL mode",
@@ -431,11 +435,14 @@ function sourceRows() {
       <div class="m">${esc(x.project)} · ${esc(fmtDate(x.modified))} · ${esc(L.msgs(x.count))}</div></div></label>`).join("");
   }
   if (!s.kb) return `<div class="empty">${esc(state.sources ? L.noKbApp : "…")}</div>`;
-  const rows = s.kb.filter(x => match(x.title, x.kind));
+  // Tags only matter once a project has its own knowledge base; typing "项目"/"global" filters by them.
+  const scoped = s.kb.some(x => x.scope === "project");
+  const scopeName = x => scoped && x.scope ? L.scope[x.scope] : "";
+  const rows = s.kb.filter(x => match(x.title, x.kind, scopeName(x)));
   if (!s.kb.length) return `<div class="empty">${esc(L.noDocsYet)}</div>`;
   if (!rows.length) return `<div class="empty">${esc(L.noMatch)}</div>`;
   return rows.map(x => `<label class="pitem"><input type="checkbox" data-kind="kb" data-id="${esc(x.id)}"${picked("kb", x.id) ? " checked" : ""}>
-    <div style="min-width:0"><div class="t">${esc(x.title)} <span class="kind">${esc(x.collection === "wiki" ? L.note : x.kind)}</span></div>
+    <div style="min-width:0"><div class="t">${scopeName(x) ? `<span class="scope ${x.scope}" title="${esc(L.scopeTip[x.scope])}">${esc(scopeName(x))}</span>` : ""}${esc(x.title)} <span class="kind">${esc(x.collection === "wiki" ? L.note : x.kind)}</span></div>
     <div class="m">${x.pages ? esc(L.pages(x.pages)) + " · " : ""}${(x.chars / 1000).toFixed(1)}k</div></div></label>`).join("");
 }
 function trayHtml() {

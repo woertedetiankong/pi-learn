@@ -24,7 +24,11 @@ export interface SourceInfo { kind: SourceKind; id: string; title: string; pages
 export interface Material { passages: Passage[]; sources: SourceInfo[]; truncated: boolean }
 
 export interface SessionEntry { id: string; title: string; project: string; modified: string; count: number; summary?: string; archived?: boolean }
-export interface KbEntry { id: string; title: string; collection: "docs" | "wiki"; kind: string; pages: number | null; chars: number }
+export interface KbEntry {
+  id: string; title: string; collection: "docs" | "wiki"; kind: string; pages: number | null; chars: number;
+  /** pi-kb 0.5+: the project's knowledge base (shared through git) or the user's global one. */
+  scope?: "project" | "global";
+}
 export interface SourceList { sessions?: SessionEntry[]; kb?: KbEntry[] }
 
 export const PASSAGE_MAX = 1800, MAX_SOURCES = 20;
@@ -58,6 +62,7 @@ export async function listSources(hub: WebHub, signal: AbortSignal, lang: Lang):
     const data = await callApp(hub, "kb", "/docs", {}, signal, lang);
     out.kb = (Array.isArray(data?.docs) ? data.docs : []).map((d: any) => ({
       id: d.id, title: d.title, collection: d.collection, kind: d.kind, pages: d.pages ?? null, chars: d.chars ?? 0,
+      scope: d.scope === "project" || d.scope === "global" ? d.scope : undefined,
     }));
   }
   return out;
