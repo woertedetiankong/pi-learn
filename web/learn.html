@@ -124,6 +124,9 @@ h2 { font-size: 15px; margin: 0; font-weight: 650; }
 .stepper .ctl { display: flex; align-items: center; gap: 4px; }
 .stepper .ctl button { width: 26px; height: 26px; border-radius: 6px; border: 1px solid var(--line-strong); font-weight: 600; }
 .stepper .ctl button:hover { background: var(--bg); }
+.auto-tag { font-size: 12.5px; color: var(--faint); }
+button.auto-tag { color: var(--accent-text); }
+button.auto-tag:hover { text-decoration: underline; }
 .stepper .v { min-width: 22px; text-align: center; font: 600 15px var(--mono); }
 .field { display: flex; flex-direction: column; gap: 6px; margin-top: 14px; }
 .field label { font-size: 12.5px; color: var(--muted); font-weight: 550; }
@@ -275,7 +278,7 @@ const L = {
     chatTitle: "问 AI 老师", chatClear: "清空", chatPh: "问题目、答案或知识点，也可以让它再出几道题…（Enter 发送，Shift+Enter 换行）", send: "发送",
     thinking: "思考中…", added: n => `已添加 ${n} 道新题`, hints: ["帮我讲讲这份测验考了哪些核心知识点", "我做错的题，帮我总结一下错因", "再出 3 道更难的题"],
     askAbout: n => `第 ${n} 题我不太明白，能讲讲吗？`, chatToggle: "问 AI",
-    offline: "连接不上 pi，请确认 pi 还在运行", switching: "pi 正在切换会话…", sources: n => `${n} 个来源`, questions: n => `${n} 题`,
+    offline: "连接不上 pi，请确认 pi 还在运行", switching: "pi 正在切换会话…", sources: n => `${n} 个来源`, questions: n => `${n} 题`, suggested: "按材料推荐", resuggest: "↺ 按材料推荐", suggestTip: "按所选材料的篇幅推荐题数；改动数量后不再自动调整",
     rename: "点击改标题",
   },
   en: {
@@ -302,7 +305,7 @@ const L = {
     chatTitle: "Ask the tutor", chatClear: "Clear", chatPh: "Ask about a question, an answer or a topic, or ask for more questions… (Enter to send)", send: "Send",
     thinking: "Thinking…", added: n => `Added ${n} new questions`, hints: ["What are the key ideas this quiz tests?", "Summarize why I got questions wrong", "Give me 3 harder questions"],
     askAbout: n => `Can you explain question ${n}?`, chatToggle: "Ask AI",
-    offline: "Cannot reach pi; is it still running?", switching: "pi is switching sessions…", sources: n => `${n} sources`, questions: n => `${n} questions`,
+    offline: "Cannot reach pi; is it still running?", switching: "pi is switching sessions…", sources: n => `${n} sources`, questions: n => `${n} questions`, suggested: "Sized to material", resuggest: "↺ Size to material", suggestTip: "Suggests a count from how much material is picked; stops once you change the numbers",
     rename: "Click to rename",
   },
 }[LANG];
@@ -360,18 +363,19 @@ function md(src) {
 // ---- State ----
 const state = {
   view: "new", quiz: null, quizzes: [], sources: null, sourcesError: "", tab: "session", filter: "",
-  picks: [], counts: { choice: 4, fill: 2, essay: 1 }, difficulty: "medium", focus: "",
+  picks: [], counts: { choice: 4, fill: 2, essay: 1 }, autoCount: true, difficulty: "medium", focus: "",
   models: [], current: "", model: "", gen: null, genError: "", showAll: false, drafts: new Map(), busy: new Set(),
   openPassages: new Set(), chatBusy: false, chatDraft: "", chatError: "",
 };
 try {
   const p = JSON.parse(localStorage.getItem("pi-learn-prefs") || "{}");
   if (p.counts) state.counts = { ...state.counts, ...p.counts };
+  if (p.autoCount === false) state.autoCount = false;
   if (p.difficulty) state.difficulty = p.difficulty;
   if (typeof p.model === "string") state.model = p.model;
   if (p.tab) state.tab = p.tab;
 } catch {}
-const savePrefs = () => { try { localStorage.setItem("pi-learn-prefs", JSON.stringify({ counts: state.counts, difficulty: state.difficulty, model: state.model, tab: state.tab })); } catch {} };
+const savePrefs = () => { try { localStorage.setItem("pi-learn-prefs", JSON.stringify({ counts: state.counts, autoCount: state.autoCount, difficulty: state.difficulty, model: state.model, tab: state.tab })); } catch {} };
 
 // ---- Models ----
 async function loadModels() {
@@ -453,7 +457,7 @@ function trayHtml() {
 function builderHtml() {
   const s = state.sources || {};
   const nS = s.sessions?.filter(x => !x.archived).length, nK = s.kb?.length;
-  const stepper = k => `<div class="stepper"><span>${esc(L[k])}</span><span class="ctl"><button data-dec="${k}">−</button><span class="v">${state.counts[k]}</span><button data-inc="${k}">+</button></span></div>`;
+  const stepper = k => `<div class="stepper"><span>${esc(L[k])}</span><span class="ctl"><button data-dec="${k}">−</button><span class="v" data-count="${k}">${state.counts[k]}</span><button data-inc="${k}">+</button></span></div>`;
   const gen = state.gen;
   return `<div class="wrap">
     <h1>${esc(L.builderTitle)}</h1><p class="lead">${esc(L.builderLead)}</p>
@@ -468,7 +472,7 @@ function builderHtml() {
       <div class="tray" id="tray">${trayHtml()}</div>
     </div>
     <div class="card">
-      <div class="step"><span class="n">2</span><h2>${esc(L.step2)}</h2></div>
+      <div class="step"><span class="n">2</span><h2>${esc(L.step2)}</h2><span class="spacer"></span><span id="autoTag">${autoTagHtml()}</span></div>
       <div class="grid3">${stepper("choice")}${stepper("fill")}${stepper("essay")}</div>
       <div class="field"><label>${esc(L.difficulty)}</label>
         <div class="seg">${["easy", "medium", "hard"].map(d => `<button data-diff="${d}" class="${state.difficulty === d ? "on" : ""}">${esc(L[d])}</button>`).join("")}</div></div>
@@ -476,7 +480,7 @@ function builderHtml() {
     </div>
     ${state.genError ? `<div class="error">${esc(state.genError)}</div>` : ""}
     ${gen ? `<div class="working"><span class="spin"></span><span id="genText">${esc(L.generating(Math.round((Date.now() - gen.started) / 1000)))}</span><span class="spacer"></span><button class="btn small" data-act="cancel">${esc(L.cancel)}</button></div><p class="faint">${esc(L.slow)}</p>`
-      : `<div class="go"><span class="faint">${esc(L.questions(state.counts.choice + state.counts.fill + state.counts.essay))} · ${esc(L.sources(state.picks.length))}</span><button class="btn primary" data-act="generate">${esc(L.generate)}</button></div>`}
+      : `<div class="go"><span class="faint">${esc(goText())}</span><button class="btn primary" data-act="generate">${esc(L.generate)}</button></div>`}
   </div>`;
 }
 function togglePick(kind, id, on) {
@@ -486,9 +490,42 @@ function togglePick(kind, id, on) {
   const item = kind === "session" ? s.sessions?.find(x => x.id === id) : s.kb?.find(x => x.id === id);
   state.picks.push({ kind, id, title: item?.title || id, paged: kind === "kb" && !!item?.pages, pages: "" });
 }
+// Suggested counts follow how much material is picked, until the learner sets the numbers themselves.
+const CHARS_PER_QUESTION = 1800, CHARS_PER_MESSAGE = 300;
+function pickChars(p) {
+  const s = state.sources || {};
+  if (p.kind === "session") return (s.sessions?.find(x => x.id === p.id)?.count || 0) * CHARS_PER_MESSAGE;
+  const item = s.kb?.find(x => x.id === p.id);
+  if (!item) return 0;
+  const m = /^\s*(\d+)(?:\s*-\s*(\d+))?\s*$/.exec(p.pages || "");
+  if (!m || !item.pages) return item.chars;
+  const n = Math.abs(Number(m[2] ?? m[1]) - Number(m[1])) + 1;
+  return item.chars * Math.min(1, n / item.pages);
+}
+function suggestCounts() {
+  const chars = state.picks.reduce((n, p) => n + pickChars(p), 0);
+  const total = Math.max(3, Math.min(15, Math.round(chars / CHARS_PER_QUESTION)));
+  const essay = total >= 5 ? Math.max(1, Math.round(total * 0.1)) : 0, fill = Math.round(total * 0.3);
+  return { choice: total - fill - essay, fill, essay };
+}
+const countTotal = () => state.counts.choice + state.counts.fill + state.counts.essay;
+function applySuggestion() {
+  if (state.autoCount && state.picks.length) { state.counts = suggestCounts(); savePrefs(); }
+}
+const autoTagHtml = () => state.autoCount
+  ? `<span class="auto-tag" title="${esc(L.suggestTip)}">${esc(L.suggested)} ✓</span>`
+  : `<button class="auto-tag" data-act="suggest" title="${esc(L.suggestTip)}">${esc(L.resuggest)}</button>`;
+const goText = () => `${L.questions(countTotal())} · ${L.sources(state.picks.length)}${state.autoCount && state.picks.length ? ` · ${L.suggested}` : ""}`;
+/** Updates step 2 and the summary line in place, so ticking a source keeps the picker's scroll position. */
+function refreshCounts() {
+  applySuggestion();
+  for (const k of ["choice", "fill", "essay"]) { const v = document.querySelector(`[data-count="${k}"]`); if (v) v.textContent = state.counts[k]; }
+  const tag = $("autoTag"); if (tag) tag.innerHTML = autoTagHtml();
+  const go = document.querySelector(".go .faint"); if (go) go.textContent = goText();
+}
 async function generate() {
   if (!state.picks.length) return toast(L.pickFirst);
-  if (!(state.counts.choice + state.counts.fill + state.counts.essay)) return toast(L.countFirst);
+  if (!countTotal()) return toast(L.countFirst);
   const abort = new AbortController();
   state.gen = { started: Date.now(), abort }; state.genError = "";
   renderMain();
@@ -696,9 +733,10 @@ $("main").addEventListener("click", async e => {
   const b = e.target.closest("button"); if (!b) return;
   const d = b.dataset;
   if (d.tab) { state.tab = d.tab; savePrefs(); renderMain(); return; }
-  if (d.inc || d.dec) { const k = d.inc || d.dec; state.counts[k] = Math.max(0, Math.min(20, state.counts[k] + (d.inc ? 1 : -1))); savePrefs(); renderMain(); return; }
+  if (d.inc || d.dec) { const k = d.inc || d.dec; state.counts[k] = Math.max(0, Math.min(20, state.counts[k] + (d.inc ? 1 : -1))); state.autoCount = false; savePrefs(); renderMain(); return; }
   if (d.diff) { state.difficulty = d.diff; savePrefs(); renderMain(); return; }
-  if (d.unpick) { state.picks.splice(Number(d.unpick), 1); renderMain(); return; }
+  if (d.unpick) { state.picks.splice(Number(d.unpick), 1); applySuggestion(); renderMain(); return; }
+  if (d.act === "suggest") { state.autoCount = true; applySuggestion(); savePrefs(); renderMain(); return; }
   if (d.act === "generate") return generate();
   if (d.act === "cancel") { state.gen?.abort.abort(); return; }
   if (d.act === "showall") { state.showAll = !state.showAll; renderMain(); return; }
@@ -734,13 +772,13 @@ $("main").addEventListener("click", async e => {
 });
 $("main").addEventListener("change", e => {
   const t = e.target;
-  if (t.matches(".pitem input[type=checkbox]")) { togglePick(t.dataset.kind, t.dataset.id, t.checked); $("tray").innerHTML = trayHtml(); document.querySelector(".step .faint").textContent = L.selected(state.picks.length); const go = document.querySelector(".go .faint"); if (go) go.textContent = `${L.questions(state.counts.choice + state.counts.fill + state.counts.essay)} · ${L.sources(state.picks.length)}`; }
+  if (t.matches(".pitem input[type=checkbox]")) { togglePick(t.dataset.kind, t.dataset.id, t.checked); $("tray").innerHTML = trayHtml(); document.querySelector(".step .faint").textContent = L.selected(state.picks.length); refreshCounts(); }
 });
 $("main").addEventListener("input", e => {
   const t = e.target;
   if (t.id === "filter") { state.filter = t.value; $("plist").innerHTML = sourceRows(); return; }
   if (t.id === "focus") { state.focus = t.value; return; }
-  if (t.dataset.pages !== undefined) { state.picks[Number(t.dataset.pages)].pages = t.value.trim(); return; }
+  if (t.dataset.pages !== undefined) { state.picks[Number(t.dataset.pages)].pages = t.value.trim(); refreshCounts(); return; }
   if (t.dataset.essay) { const d = state.drafts.get(t.dataset.essay) || {}; state.drafts.set(t.dataset.essay, { ...d, text: t.value }); return; }
   if (t.dataset.blank !== undefined) {
     const d = state.drafts.get(t.dataset.q) || {}, blanks = [...(d.blanks || [])];
